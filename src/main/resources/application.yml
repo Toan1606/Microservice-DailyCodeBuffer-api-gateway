@@ -1,0 +1,46 @@
+server:
+  port: 9191
+spring:
+  application:
+    name: API-GATEWAY
+  cloud:
+    gateway:
+      routes:
+      - id: circuitbreaker_route
+          uri: lb://backing-service:8088
+          predicates:
+            - Path=/consumingServiceEndpoint
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: myCircuitBreaker
+                fallbackUri: forward:/inCaseOfFailureUseThis
+             - RewritePath=/consumingServiceEndpoint, /backingServiceEndpoint
+      - id: USER-SERVICE
+        uri: lb://USER-SERVICE
+        predicates:
+          - Path=/api/v1/users/**
+        filters:
+          - name: USER-SERVICE
+            args:
+              name: CircuitBreaker
+              fallbackUri: forward:/userServiceFallBack
+      - id: DEPARTMENT-SERVICE
+        uri: lb://DEPARTMENT-SERVICE
+        predicates:
+          - Path=/api/v1/departments/**
+        filters:
+          - name: DEPARTMENT-SERVICE
+            args:
+
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+
